@@ -1,0 +1,161 @@
+import java.awt.*; import java.awt.event.*; import java.io.*;
+import java.text.DecimalFormat;
+
+public class ElectricityBillingAWT extends Frame implements ActionListener {
+// UI components
+Label lblTitle, lblName, lblMeter, lblPrev, lblCurr, lblConn, lblMsg; TextField tfName, tfMeter, tfPrev, tfCurr;
+Choice chConn;
+Button btnCalc, btnClear, btnSave, btnExit; TextArea taBill;
+DecimalFormat df = new DecimalFormat("#0.00");
+
+// Last calculated bill text (to save) String lastBillText = "";
+
+public ElectricityBillingAWT() { setTitle("Electricity Billing System - AWT"); setSize(700, 520);
+setLayout(null); setResizable(false);
+lblTitle = new Label("Electricity Billing System", Label.CENTER); lblTitle.setFont(new Font("SansSerif", Font.BOLD, 18)); lblTitle.setBounds(150, 30, 400, 30);
+
+add(lblTitle);
+
+// Labels and text fields
+lblName = new Label("Customer Name:"); lblName.setBounds(40, 90, 120, 25); add(lblName);
+tfName = new TextField(); tfName.setBounds(170, 90, 200, 25); add(tfName);
+lblMeter = new Label("Meter Number:"); lblMeter.setBounds(40, 130, 120, 25); add(lblMeter);
+tfMeter = new TextField(); tfMeter.setBounds(170, 130, 200, 25); add(tfMeter);
+
+lblPrev = new Label("Previous Reading (units):"); lblPrev.setBounds(40, 170, 150, 25); add(lblPrev);
+tfPrev = new TextField(); tfPrev.setBounds(200, 170, 170, 25); add(tfPrev);
+
+lblCurr = new Label("Current Reading (units):"); lblCurr.setBounds(40, 210, 150, 25); add(lblCurr);
+tfCurr = new TextField(); tfCurr.setBounds(200, 210, 170, 25); add(tfCurr);
+lblConn = new Label("Connection Type:"); lblConn.setBounds(40, 250, 120, 25); add(lblConn);
+chConn = new Choice(); chConn.setBounds(170, 250, 200, 25); chConn.add("Domestic"); chConn.add("Commercial");
+
+add(chConn);
+
+// Buttons
+btnCalc = new Button("Calculate Bill"); btnCalc.setBounds(40, 300, 120, 30); btnCalc.addActionListener(this); add(btnCalc);
+
+btnClear = new Button("Clear"); btnClear.setBounds(170, 300, 80, 30); btnClear.addActionListener(this); add(btnClear);
+btnSave = new Button("Save Bill"); btnSave.setBounds(270, 300, 80, 30); btnSave.addActionListener(this); add(btnSave);
+
+btnExit = new Button("Exit"); btnExit.setBounds(370, 300, 80, 30); btnExit.addActionListener(this); add(btnExit);
+
+// Message / status label
+lblMsg = new Label("", Label.LEFT); lblMsg.setBounds(40, 340, 500, 20); add(lblMsg);
+// Text area to show bill taBill = new TextArea();
+taBill.setBounds(400, 90, 270, 300);
+taBill.setFont(new Font("Monospaced", Font.PLAIN, 12)); taBill.setEditable(false);
+add(taBill);
+// Window close
+addWindowListener(new WindowAdapter() { public void windowClosing(WindowEvent we) {
+dispose();
+System.exit(0);
+}
+});
+
+setVisible(true);
+}
+
+// Basic slab rates (example). You can modify these as required.
+// For demonstration:
+// Domestic: 0-100 @1.50, 101-300 @2.50, >300 @4.00
+// Commercial: 0-100 @2.50, 101-300 @4.00, >300 @6.00 private double[] calculateCharges(int units, String connType) {
+double energyCharge = 0.0;
+if (connType.equals("Domestic")) { if (units <= 100) {
+energyCharge = units * 1.50;
+} else if (units <= 300) {
+energyCharge = 100 * 1.50 + (units - 100) * 2.50;
+} else {
+energyCharge = 100 * 1.50 + 200 * 2.50 + (units - 300) * 4.00;
+}
+} else { // Commercial if (units <= 100) {
+energyCharge = units * 2.50;
+} else if (units <= 300) {
+energyCharge = 100 * 2.50 + (units - 100) * 4.00;
+} else {
+energyCharge = 100 * 2.50 + 200 * 4.00 + (units - 300) * 6.00;
+}
+}
+return new double[] { energyCharge };
+}
+// Compose a formatted bill string using String operations
+private String composeBill(String name, String meter, int prev, int curr, int units, String connType, double energyCharge, double fixedCharge, double taxPercent) {
+double tax = energyCharge * taxPercent / 100.0; double total = energyCharge + fixedCharge + tax;
+StringBuilder sb = new StringBuilder();
+sb.append("----------- ELECTRICITY BILL	\n");
+sb.append(padRight("Customer Name:", 18)).append(name).append("\n"); sb.append(padRight("Meter No:", 18)).append(meter).append("\n"); sb.append(padRight("Connection Type:", 18)).append(connType).append("\n"); sb.append("\n");
+sb.append(padRight("Previous Reading:", 22)).append(prev).append(" units\n");
+sb.append(padRight("Current Reading:", 22)).append(curr).append(" units\n"); sb.append(padRight("Total Consumption:", 22)).append(units).append("
+units\n");
+sb.append("\n");
+sb.append(padRight("Energy Charges:", 22)).append("Rs. ").append(df.format(energyCharge)).append("\n");
+sb.append(padRight("Fixed Charges:", 22)).append("Rs. ").append(df.format(fixedCharge)).append("\n");
+sb.append(padRight("Tax (" + df.format(taxPercent) + "%):", 22)).append("Rs. ").append(df.format(tax)).append("\n");
+sb.append("	\n");
+sb.append(padRight("Total Amount Payable:", 22)).append("Rs. ").append(df.format(total)).append("\n");
+sb.append("	\n");
+sb.append("Note: Please pay before due date to avoid penalties.\n"); sb.append("Generated by ElectricityBillingAWT\n");
+
+lastBillText = sb.toString(); return sb.toString();
+}
+
+// Utility for aligning text
+private String padRight(String s, int n) { if (s.length() >= n) return s;
+StringBuilder sb = new StringBuilder(s);
+for (int i = s.length(); i < n; i++) sb.append(' ');
+
+return sb.toString();
+}
+
+@Override
+public void actionPerformed(ActionEvent ae) { Object src = ae.getSource();
+if (src == btnCalc) { lblMsg.setText("");
+String name = tfName.getText().trim(); String meter = tfMeter.getText().trim(); String prevS = tfPrev.getText().trim(); String currS = tfCurr.getText().trim(); String conn = chConn.getSelectedItem();
+
+if (name.isEmpty() || meter.isEmpty() || prevS.isEmpty() || currS.isEmpty())
+{
+lblMsg.setForeground(Color.RED); lblMsg.setText("Please fill all fields."); return;
+}
+
+int prev, curr; try {
+prev = Integer.parseInt(prevS); curr = Integer.parseInt(currS);
+} catch (NumberFormatException nfe) { lblMsg.setForeground(Color.RED); lblMsg.setText("Readings must be integer numbers."); return;
+}
+if (curr < prev) { lblMsg.setForeground(Color.RED);
+lblMsg.setText("Current reading cannot be less than previous reading."); return;
+}
+int units = curr - prev;
+double fixedCharge = conn.equals("Domestic") ? 50.0 : 100.0; double taxPercent = conn.equals("Domestic") ? 5.0 : 12.0;
+
+double[] charges = calculateCharges(units, conn); double energyCharge = charges[0];
+
+String bill = composeBill(name, meter, prev, curr, units, conn, energyCharge, fixedCharge, taxPercent);
+taBill.setText(bill); lblMsg.setForeground(new Color(0, 120, 0));
+lblMsg.setText("Bill calculated successfully.");
+} else if (src == btnClear) { tfName.setText(""); tfMeter.setText(""); tfPrev.setText("");
+tfCurr.setText("");
+taBill.setText("");
+lblMsg.setText(""); lastBillText = "";
+} else if (src == btnSave) {
+if (lastBillText == null || lastBillText.isEmpty()) { lblMsg.setForeground(Color.RED); lblMsg.setText("No bill to save. Calculate a bill first."); return;
+}
+FileDialog fd = new FileDialog(this, "Save Bill As", FileDialog.SAVE); fd.setFile("bill.txt");
+fd.setVisible(true);
+String dir = fd.getDirectory(); String file = fd.getFile();
+if (dir != null && file != null) {
+try (FileWriter fw = new FileWriter(new File(dir, file))) { fw.write(lastBillText);
+lblMsg.setForeground(new Color(0, 120, 0)); lblMsg.setText("Bill saved to: " + dir + file);
+} catch (IOException ioe) {
+lblMsg.setForeground(Color.RED);
+lblMsg.setText("Error saving bill: " + ioe.getMessage());
+}
+} else {
+lblMsg.setForeground(Color.BLACK); lblMsg.setText("Save cancelled.");
+}
+} else if (src == btnExit) { dispose(); System.exit(0);
+}
+}
+public static void main(String[] args) {
+// Run the AWT UI in the main thread (simple app) new ElectricityBillingAWT();
+}
+}
